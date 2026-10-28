@@ -1,0 +1,13 @@
+{
+  "name": "RFID Security Locker",
+  "short_name": "RFID Locker",
+  "description": "RFID access control and security monitoring",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fb",
+  "theme_color": "#0b1220",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

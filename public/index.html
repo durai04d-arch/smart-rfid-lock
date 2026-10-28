@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <meta name="description" content="RFID Security Locker administration and access monitoring dashboard.">
+  <title>RFID Security Locker</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div id="loginView" class="login-shell">
+    <div class="login-card">
+      <div class="brand-mark">⌁</div>
+      <p class="eyebrow">SECURE ACCESS MANAGEMENT</p>
+      <h1>RFID Locker</h1>
+      <p class="muted">Sign in to monitor scans, manage cards and review security events.</p>
+      <form id="loginForm">
+        <label for="email">Admin email</label>
+        <input id="email" name="email" type="email" autocomplete="username" placeholder="admin@example.com" required>
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Your password" required>
+        <button class="primary full" type="submit">Sign in <span>→</span></button>
+      </form>
+      <p id="loginMessage" class="message" role="status"></p>
+      <div class="login-foot"><span class="pulse"></span> Protected admin session</div>
+    </div>
+  </div>
+
+  <div id="appView" class="app-shell hidden">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#overview"><span class="brand-mark small">⌁</span><span><b>RFID Locker</b><small>SECURITY CONSOLE</small></span></a>
+      <div class="side-label">WORKSPACE</div>
+      <nav>
+        <a class="nav-link active" href="#overview" data-nav="overview"><span>▦</span> Overview</a>
+        <a class="nav-link" href="#cards" data-nav="cards"><span>▤</span> Card registry <i id="pendingBadge" class="nav-badge">0</i></a>
+        <a class="nav-link" href="#logs" data-nav="logs"><span>≋</span> Access logs</a>
+        <a class="nav-link" href="#analytics" data-nav="analytics"><span>⌁</span> Analytics</a>
+        <a class="nav-link" href="#device" data-nav="device"><span>⌘</span> Device status</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="side-status"><span id="sideCloudDot" class="dot"></span><div><b id="sideCloudText">Checking cloud</b><small>ThingSpeak connection</small></div></div>
+        <button id="installBtn" class="install-btn hidden">＋ Install app</button>
+        <div class="profile"><div class="avatar">A</div><div class="profile-info"><b id="adminEmail">Administrator</b><small>Admin session</small></div><button id="logoutBtn" class="icon-btn" title="Sign out" aria-label="Sign out">↗</button></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="menuBtn" class="icon-btn mobile-menu" aria-label="Open navigation">☰</button>
+        <div><div class="crumb">Workspace <span>/</span> <b id="pageCrumb">Overview</b></div><h1 id="pageTitle">Security overview</h1></div>
+        <div class="top-actions"><div class="live-pill"><span class="pulse"></span><span id="lastSync">Syncing…</span></div><button id="refreshBtn" class="secondary">↻ <span>Refresh</span></button></div>
+      </header>
+
+      <section id="overviewPage" class="page">
+        <div class="welcome-row"><div><p class="eyebrow">LIVE MONITORING</p><h2>Your locker, at a glance.</h2><p class="muted">Track RFID access events and manage card authorization.</p></div><div class="date-chip" id="todayLabel">Today</div></div>
+        <div class="stat-grid">
+          <article class="stat-card"><div class="stat-head"><span>Total recorded scans</span><span class="stat-icon blue">↗</span></div><strong id="totalScans">—</strong><small>From available scan records</small><div class="stat-foot"><span class="mini-dot blue-bg"></span> ThingSpeak + local logs</div></article>
+          <article class="stat-card"><div class="stat-head"><span>Access granted</span><span class="stat-icon green">✓</span></div><strong id="grantedScans">—</strong><small>Authorized card scans</small><div class="stat-foot"><span class="mini-dot green-bg"></span> Approved cards</div></article>
+          <article class="stat-card"><div class="stat-head"><span>Access denied</span><span class="stat-icon red">×</span></div><strong id="deniedScans">—</strong><small>Unknown or unapproved cards</small><div class="stat-foot"><span class="mini-dot red-bg"></span> Denied access attempts</div></article>
+          <article class="stat-card"><div class="stat-head"><span>Registered cards</span><span class="stat-icon purple">▤</span></div><strong id="registeredCards">—</strong><small>All card records</small><div class="stat-foot"><span class="mini-dot purple-bg"></span><span id="approvedCards">0 approved</span></div></article>
+        </div>
+        <div class="content-grid">
+          <article class="panel latest-panel">
+            <div class="panel-heading"><div><h3>Latest RFID event</h3><p>Most recent event from ThingSpeak</p></div><span class="tiny-tag"><span class="pulse"></span> LIVE FEED</span></div>
+            <div id="latestEvent" class="latest-event empty"><div class="event-symbol">⌁</div><div><b>Waiting for channel data</b><p>Configure the ThingSpeak channel on the server to display scan events.</p></div></div>
+            <div class="event-meta"><div><small>Latest UID</small><b id="latestUid">—</b></div><div><small>Event timestamp</small><b id="latestTime">—</b></div><div><small>ThingSpeak entry</small><b id="latestEntry">—</b></div></div>
+          </article>
+          <article class="panel device-panel">
+            <div class="panel-heading"><div><h3>Device health</h3><p>ESP32 heartbeat status</p></div><a href="#device" class="text-link">Details →</a></div>
+            <div class="device-visual"><div class="device-orbit"><div class="device-chip">ESP</div></div><div><span id="deviceBadge" class="status-badge neutral">Not reported</span><h3 id="deviceMainStatus">Awaiting heartbeat</h3><p id="deviceLastSeen" class="muted">Connect your ESP32 to the device API.</p></div></div>
+            <div class="device-bottom"><span><i class="mini-dot green-bg"></i> Backend device monitor</span><a href="#device">Configure →</a></div>
+          </article>
+        </div>
+        <div class="content-grid lower-grid">
+          <article class="panel"><div class="panel-heading"><div><h3>Scan activity</h3><p>Recent ThingSpeak channel readings</p></div><span class="chart-caption">HISTORY</span></div><div class="chart-wrap"><canvas id="overviewChart" aria-label="Scan activity chart"></canvas></div></article>
+          <article class="panel"><div class="panel-heading"><div><h3>Card approvals</h3><p>Authorization status distribution</p></div><a href="#cards" class="text-link">Manage →</a></div><div class="donut-wrap"><canvas id="cardChart" aria-label="Card approval chart"></canvas></div><div class="legend-list"><span><i class="legend-dot green-bg"></i> Approved <b id="legendApproved">0</b></span><span><i class="legend-dot amber-bg"></i> Pending <b id="legendPending">0</b></span><span><i class="legend-dot red-bg"></i> Rejected <b id="legendRejected">0</b></span></div></article>
+        </div>
+        <article class="panel"><div class="panel-heading"><div><h3>Recent access activity</h3><p>Latest events received by the application backend</p></div><a href="#logs" class="text-link">View all logs →</a></div><div id="recentLogs" class="table-wrap"></div></article>
+      </section>
+
+      <section id="cardsPage" class="page hidden">
+        <div class="page-intro"><div><p class="eyebrow">ACCESS CONTROL</p><h2>Card registry</h2><p class="muted">Register UID records, then explicitly approve cards for access.</p></div><button id="newCardBtn" class="primary">＋ Add card</button></div>
+        <div class="stat-strip"><div><small>Total cards</small><b id="cardsTotal">0</b></div><div><small>Pending review</small><b id="cardsPending">0</b></div><div><small>Approved</small><b id="cardsApproved">0</b></div><div><small>Rejected</small><b id="cardsRejected">0</b></div></div>
+        <div class="panel"><div class="toolbar"><div class="searchbox"><span>⌕</span><input id="cardSearch" placeholder="Search UID, name or details"></div><select id="cardStatusFilter"><option value="all">All statuses</option><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></div><div id="cardsTable" class="table-wrap"></div></div>
+        <div class="info-note"><b>Security note</b><span>Card approval is stored in the backend database. Your ESP32 must call the authenticated device API to check each UID before unlocking.</span></div>
+      </section>
+
+      <section id="logsPage" class="page hidden">
+        <div class="page-intro"><div><p class="eyebrow">AUDIT TRAIL</p><h2>Access logs</h2><p class="muted">Filter backend-recorded card scans and export a CSV report.</p></div><button id="exportBtn" class="secondary">⇩ Export CSV</button></div>
+        <div class="panel filter-panel"><div class="filter-grid"><label>From date<input id="logFrom" type="date"></label><label>To date<input id="logTo" type="date"></label><label>Card UID<input id="logUid" placeholder="A3:7F:12:BC"></label><label>Result<select id="logResult"><option value="">All results</option><option value="GRANTED">Granted</option><option value="DENIED">Denied</option></select></label><div class="filter-buttons"><button id="applyLogFilters" class="primary">Apply filters</button><button id="clearLogFilters" class="secondary">Clear</button></div></div></div>
+        <div class="panel"><div class="panel-heading"><div><h3>Recorded events</h3><p id="logCount">No results loaded</p></div><span class="chart-caption">LATEST FIRST</span></div><div id="logsTable" class="table-wrap"></div></div>
+      </section>
+
+      <section id="analyticsPage" class="page hidden">
+        <div class="page-intro"><div><p class="eyebrow">INSIGHTS</p><h2>Security analytics</h2><p class="muted">Visualize the channel history that ThingSpeak provides.</p></div><button id="analyticsRefresh" class="secondary">↻ Refresh analytics</button></div>
+        <div class="stat-grid compact"><article class="stat-card"><div class="stat-head"><span>Granted (reported)</span><span class="stat-icon green">✓</span></div><strong id="analyticsGranted">—</strong><small>Derived from configured counters when present</small></article><article class="stat-card"><div class="stat-head"><span>Denied (reported)</span><span class="stat-icon red">×</span></div><strong id="analyticsDenied">—</strong><small>Derived from configured counters when present</small></article><article class="stat-card"><div class="stat-head"><span>Readings loaded</span><span class="stat-icon blue">⌁</span></div><strong id="analyticsReadings">0</strong><small>ThingSpeak channel feed entries</small></article></div>
+        <div class="panel"><div class="panel-heading"><div><h3>Scan counters over time</h3><p>Field 2 = total scans · Field 3 = denied scans by default</p></div></div><div class="chart-wrap tall"><canvas id="analyticsChart"></canvas></div></div>
+        <div class="panel"><div class="panel-heading"><div><h3>ThingSpeak field mapping</h3><p>Expected channel schema</p></div></div><div class="mapping-list"><div><b>Field 1</b><span>Access result — 1 granted, 0 denied</span></div><div><b>Field 2</b><span>Total scan count</span></div><div><b>Field 3</b><span>Denied scan count</span></div><div><b>Status</b><span>Optional UID text such as RFID_UID:A3:7F:12:BC</span></div><div><b>Field 4 / Field 5</b><span>Optional UID numeric encoding / device status if your firmware uses them</span></div></div><p class="muted note">ThingSpeak fields are numeric. Store a hexadecimal UID in the feed entry's status text if you need to preserve the full UID exactly. ThingSpeak does not store the card registry in this application.</p></div>
+      </section>
+
+      <section id="devicePage" class="page hidden">
+        <div class="page-intro"><div><p class="eyebrow">HARDWARE</p><h2>Device status</h2><p class="muted">Monitor ESP32 heartbeats received by the backend.</p></div><span class="status-badge neutral" id="devicePageBadge">Awaiting device</span></div>
+        <div class="content-grid"><article class="panel"><div class="panel-heading"><div><h3>ESP32 locker controller</h3><p>Device ID: esp32-locker</p></div></div><div class="device-large"><div class="device-orbit"><div class="device-chip">ESP32</div></div><div><h2 id="deviceDetailStatus">Not connected</h2><p id="deviceDetailSeen" class="muted">No heartbeat has been received yet.</p><span id="deviceFirmware" class="code-chip">Firmware: unknown</span></div></div></article><article class="panel"><div class="panel-heading"><div><h3>Integration checklist</h3><p>Required to enable real device reporting</p></div></div><ul class="check-list"><li><span>01</span><div><b>Configure device token</b><p>Set DEVICE_API_TOKEN in server environment and firmware.</p></div></li><li><span>02</span><div><b>Send heartbeat</b><p>POST to /api/device/heartbeat every 30 seconds.</p></div></li><li><span>03</span><div><b>Submit each UID</b><p>POST to /api/device/scan and use its result for the relay decision.</p></div></li><li><span>04</span><div><b>Fail securely</b><p>If backend is unavailable, keep the locker locked.</p></div></li></ul></article></div>
+        <div class="info-note"><b>Important</b><span>ThingSpeak alone is not a secure real-time authorization service. This app uses a server-side card registry and authenticated device API for access decisions; ThingSpeak remains the cloud analytics feed.</span></div>
+      </section>
+      <footer class="app-footer"><span>RFID Security Locker <b>v1.0</b></span><span>Secure by design · <span id="footerTime"></span></span></footer>
+    </main>
+  </div>
+
+  <div id="cardModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card"><div class="modal-head"><div><p class="eyebrow">CARD REGISTRY</p><h2 id="modalTitle">Add RFID card</h2></div><button id="closeModalBtn" class="icon-btn" aria-label="Close">×</button></div>
+      <form id="cardForm"><label for="cardUid">RFID UID <span class="required">*</span></label><input id="cardUid" required placeholder="A3:7F:12:BC" autocomplete="off"><small class="field-help">Use the UID format shown by your RC522 serial monitor.</small><label for="cardName">Card holder name <span class="required">*</span></label><input id="cardName" required maxlength="120" placeholder="Person or card owner"><label for="cardDetails">Additional details</label><textarea id="cardDetails" rows="3" maxlength="500" placeholder="Department, roll number, purpose…"></textarea><p id="cardMessage" class="message"></p><div class="modal-actions"><button type="button" id="cancelCardBtn" class="secondary">Cancel</button><button type="submit" class="primary">Save as pending</button></div></form>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status"></div>
+</body>
+</html>

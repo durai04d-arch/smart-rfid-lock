@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: rfid-security-locker
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    disk:
+      name: rfid-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_PATH
+        value: /var/data/rfid.sqlite
+      - key: TRUST_PROXY
+        value: "1"
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: DEVICE_API_TOKEN
+        sync: false
+      - key: THINGSPEAK_CHANNEL_ID
+        value: "3555994"
+      - key: THINGSPEAK_READ_API_KEY
+        sync: false
